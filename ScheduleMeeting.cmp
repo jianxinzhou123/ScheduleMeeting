@@ -1,0 +1,70 @@
+<aura:component controller="YelpAPISearch" implements="flexipage:availableForRecordHome,force:hasRecordId,force:lightningQuickAction" access="global" >
+	<aura:html tag="style">
+        .slds-modal__container {
+             width : 80% !important;
+             max-width : 80% !important;
+         }
+    </aura:html> 
+    
+    <aura:attribute name="recordId" type="String"/>
+    
+     <aura:attribute name="AppointmentType" type="List" default="[
+     {'label': 'New Meeting', 'value': 'New Meeting'},
+     {'label': 'Follow Up', 'value': 'Follow Up'}
+     ]"/>
+     <aura:attribute name="today" type="Date" />
+    <aura:attribute name="autocompleteList" type="List"/>
+    <aura:attribute name="thisContact" type="Contact"/>
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}" />
+    <aura:attribute name="mapMarkers" type="Object"/>
+    <aura:attribute name="mapCenter" type="Object"/>
+    <aura:attribute name="markersTitle" type="String" />
+    <aura:attribute name="hideAutocompleteBox" type="String" />
+    
+    <!--<lightning:card title="Scheduling" iconName="custom:custom112"/>-->   
+    <span onclick="{!c.makeListBoxDissapear}">
+        <lightning:layout >
+        	<lightning:layoutItem flexibility="auto" padding="around-small">
+                	<span onkeypress="{!c.onPressEnter}">
+                    	<lightning:input type="search" required="true" label="Address" name="inputLabel" placeholder="Search location and paste the address here. ↵" aura:id="SearchInputField" onchange="{!c.keyCheck}"/>
+                    </span>
+                        <div id="listbox-suggestions" aura:id="query-suggest-box" class="{!v.hideAutocompleteBox}" role="listbox">
+                 			<ul aura:id="query-suggest-list" class="slds-listbox slds-listbox_vertical" role="presentation" >  	
+                        		<aura:iteration items="{!v.autocompleteList}" var="item" indexVar="index" >
+
+                                    <li aura:id="query-suggest-item"  role="presentation" class="slds-listbox__item" >
+                                        <div aura:id="query-suggestion" title="{!item}" onclick="{!c.onClickAutoComplete}" id="suggestionID" class="slds-media slds-listbox__option slds-listbox__option_plain slds-media_small" role="option" 
+                                             value="{!item}" >
+                                            {!item}
+                                        </div>
+                                    </li>
+                        		</aura:iteration>
+                        	</ul>
+                   	 </div>   
+                 <br/>
+                <lightning:combobox type="search" value="" required="true" aura:id="appointmentTypeSelect" name="appointmentTypeSelect" label="Select Meeting Type" placeholder="Select Meeting Type" options="{!v.AppointmentType}"/>
+                <br/>
+                <lightning:input type="datetime" name="dateandtime" aura:id="pref_dateandtime" label="Date and Time" required="true" value="{!v.today}" />
+				<br/>
+                <lightning:map title="Map Locations" zoomLevel="15" mapMarkers="{!v.mapMarkers}" markersTitle="{!v.markersTitle}"/>
+                <br/>
+
+                <div class="slds-box slds-theme_shade slds-theme_alert-texture slds-align_absolute-center">
+                    <span class="slds-m-right_medium" aura:id="submitButton" onclick="{!c.validateFields}">
+                        <lightning:button variant="brand" label="Set Meeting" title="Set Meeting"/>
+                    </span>
+                    
+                    <span class="slds-m-right_medium" html-align="right" aura:id="previousPageMapListview" onclick="">
+                        <lightning:button variant="brand" label="Previous Map Page" title="Previous Page"/>
+                    </span>
+                    
+                    <span class="slds-m-right_medium" aura:id="nextPageMapListview" onclick="">
+                        <lightning:button variant="brand" label="Next Map Page" title="Next Page"/>
+                    </span>
+                </div>
+                
+            
+        	</lightning:layoutItem>
+    	</lightning:layout>
+    </span>
+</aura:component>

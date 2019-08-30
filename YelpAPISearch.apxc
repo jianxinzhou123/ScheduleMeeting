@@ -1,0 +1,121 @@
+public class YelpAPISearch {
+ 
+    private static APIKeys__mdt[] records = [SELECT  Key__c FROM APIKeys__mdt WHERE Name__c = 'Yelp_APIKey' LIMIT 1]; 
+    private static string APIKEY = records[0].Key__c;
+    	
+    @AuraEnabled
+    public static Businesses.Businesses_Z getBusiness(string businessType, string businessLocation){
+               
+        string url = 'https://api.yelp.com/v3/businesses/search?term='+businessType+'&location='+businessLocation;
+        string URLEndPoint = EncodingUtil.urlDecode(url, 'UTF-8');
+        
+        Http http = new Http();
+        
+        HttpRequest req = new HttpRequest();
+        req.setMethod('GET');
+        req.setHeader('Authorization', 'Bearer ' + APIKEY);
+        req.setEndpoint(URLEndPoint);
+        
+        
+        HttpResponse response = http.send(req);
+        System.debug(response.getBody());
+        Businesses.Businesses_Z result = Businesses.parse(response.getBody());
+        return result; //returning the businesses that are found by the API with matching conditional parameters
+    }
+    
+    @AuraEnabled
+    public static List<String> getBusinessAutocomplete(string input){
+        
+        List<String> autocompleteList = new List<String>();
+               
+       	input = EncodingUtil.urlEncode(input,'UTF-8');
+        string URLEndPoint = 'https://api.yelp.com/v3/autocomplete?text='+input;
+        
+        Http http = new Http();
+        
+        HttpRequest req = new HttpRequest();
+        req.setMethod('GET');
+        req.setHeader('Authorization', 'Bearer ' + APIKEY);
+        req.setEndpoint(URLEndPoint);
+        
+        
+        HttpResponse response = http.send(req);
+        BusinessAutoComplete result = BusinessAutoComplete.parse(response.getBody());
+        
+        for(BusinessAutoComplete.terms autocompleteTerm : result.terms)
+        {
+            autocompleteList.add(autocompleteTerm.text);
+        }
+        
+        System.debug(autocompleteList);
+        return autocompleteList;
+    }
+    
+    @AuraEnabled
+    public static Contact getContact(ID id){
+        return [SELECT Id, Name, MailingAddress, MailingStreet, MailingCity, MailingCountry from Contact WHERE Id = :id];
+    }
+        
+    @AuraEnabled
+    public static List<Map<string, string>> getBusinessInfo(string businessType, string businessLocation){
+        
+        List<Map<string, string>> businessList = new List<Map<string, string>>();
+               
+       	businessType = EncodingUtil.urlEncode(businessType,'UTF-8');
+        businessLocation = EncodingUtil.urlEncode(businessLocation,'UTF-8');
+        string URLEndPoint = 'https://api.yelp.com/v3/businesses/search?term='+businessType+'&location='+businessLocation;
+        
+		Http http = new Http();
+        
+        HttpRequest req = new HttpRequest();
+        req.setMethod('GET');
+        req.setHeader('Authorization', 'Bearer ' + APIKEY);
+        req.setEndpoint(URLEndPoint);
+        
+        HttpResponse response = http.send(req);
+        Businesses.Businesses_Z result = Businesses.parse(response.getBody());
+        
+        for (Businesses s : result.businesses)
+        {
+          Map<string, string> thisbusinessMap = new Map<string, string>();
+          thisbusinessMap.put('id', s.id);
+          thisbusinessMap.put('Name', s.name);
+          thisbusinessMap.put('is_closed', String.valueOf(s.is_closed));
+          thisbusinessMap.put('Rating', String.valueOf(s.rating));
+          thisbusinessMap.put('Longitude', String.valueOf(s.coordinates.longitude));
+          thisbusinessMap.put('Latitude', String.valueOf(s.coordinates.latitude));
+          thisbusinessMap.put('Street', s.location.address1);
+          thisbusinessMap.put('City', s.location.city);
+          thisbusinessMap.put('Phone', s.phone);
+          thisbusinessMap.put('PostalCode', s.location.zip_code);
+          thisbusinessMap.put('Country', s.location.country);
+          thisbusinessMap.put('Display_address', s.location.display_address[0] + ' ' + s.location.display_address[1]);
+          businessList.add(thisbusinessMap);
+        }
+         
+        return businessList;
+    }
+    
+    @AuraEnabled
+    public static void scheduleMeeting(ID id, string MeetingAddress, DateTime MeetingTime, string MeetingType){
+        
+        Contact updateContact = [SELECT id, LastName from Contact WHERE id = :id LIMIT 1];
+        updateContact.Meeting_Address__c = MeetingAddress;
+        updateContact.Meeting_DateTime__c = MeetingTime;
+        updateContact.Meeting_Type__c = MeetingType;
+        
+        update updateContact;
+        
+    }
+    
+    @AuraEnabled
+    public static boolean isTimeOlder(DateTime dt){
+        Datetime now = Datetime.now();
+		Integer offset = UserInfo.getTimezone().getOffset(now);
+		Datetime local = now.addSeconds(offset/1000);
+
+        return DateTime.valueOf(dt) < DateTime.valueOf(local);
+        
+    }
+    
+}
